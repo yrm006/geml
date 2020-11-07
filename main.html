@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>geml</title>
+
+  <script>
+    const fs = require("fs").promises;
+    const csv = require("csv-parse");
+
+    let sCSVPath;
+    let sTplPath;
+    let sOutPath;
+
+    window.onload = function(){
+        idCSVFile.ondragover =
+        idCSVFile.ondragenter =
+        idCSVFile.ondrop =
+        idCSVFile.ondragleave = (e) => {
+            if(e.type == 'drop') {
+                const files = e.dataTransfer.files;
+                console.log(files);
+                idCSVFile.textContent = files[0].name;
+                sCSVPath = files[0].path;
+            }
+
+            e.preventDefault();
+        };
+
+        idTemplate.ondragover =
+        idTemplate.ondragenter =
+        idTemplate.ondrop =
+        idTemplate.ondragleave = (e) => {
+            if(e.type == 'drop') {
+                const files = e.dataTransfer.files;
+                console.log(files);
+                idTemplate.textContent = files[0].name;
+                sTplPath = files[0].path;
+            }
+
+            e.preventDefault();
+        };
+
+        idOutDir.ondragover =
+        idOutDir.ondragenter =
+        idOutDir.ondrop =
+        idOutDir.ondragleave = (e) => {
+            if(e.type == 'drop') {
+                const files = e.dataTransfer.files;
+                console.log(files);
+                idOutDir.textContent = files[0].name;
+                sOutPath = files[0].path;
+            }
+
+            e.preventDefault();
+        };
+    };
+
+    async function onGenerate(){
+        if(!sCSVPath || !sTplPath || !sOutPath){
+            alert('set CSV, Template and Out-dir.');
+            return;
+        }
+
+        let oTable; csv(await fs.readFile(sCSVPath), {columns: true}, (e, d)=>{oTable=d;});
+        let sTemplate = (await fs.readFile(sTplPath)).toString();
+
+        let i=0;
+        while(i < oTable.length){
+            let sMail = sTemplate;
+            for(let s in oTable[i]){
+                sMail = sMail.replace('{{'+s+'}}', oTable[i][s]);
+            }
+
+            await fs.writeFile(sOutPath+'/'+i+'.eml', sMail);
+
+            ++i;
+        }
+
+        alert('eml has been generated.');
+    }
+  </script>
+</head>
+
+<body>
+    <p id="idCSVFile" style="border:3px dotted; height:3em;">
+        [ここにCSVファイルをドロップ]
+    </p>
+    <p id="idTemplate" style="border:3px dotted; height:3em;">
+        [ここにメールテンプレートをドロップ]
+    </p>
+    <p id="idOutDir" style="border:3px dotted; height:3em;">
+        [ここに生成されたメールを保存するフォルダをドロップ]
+    </p>
+
+    <button onclick="onGenerate();">生成！</button>
+</body>
+
+</html>
